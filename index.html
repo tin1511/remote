@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111418">
+<title>Điều khiển TV</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, Arial, sans-serif; background: #111418; color: #f2f4f7; padding: 16px; max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 4px 0 14px; display: flex; align-items: center; gap: 10px; }
+  #dot { width: 12px; height: 12px; border-radius: 50%; background: #666; }
+  #dot.on { background: #34d399; }
+  input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #343a46; background: #1b2027; color: #fff; font-size: 16px; }
+  button { padding: 12px 14px; border: 0; border-radius: 12px; background: #2b3340; color: #fff; font-size: 16px; }
+  .row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+  .row > input { flex: 1; min-width: 0; }
+  #mic { width: 100%; padding: 22px; font-size: 20px; background: #2563eb; }
+  #mic.rec { background: #dc2626; }
+  #log { margin-top: 14px; font-size: 15px; line-height: 1.5; }
+  #log div { padding: 8px 12px; margin: 6px 0; border-radius: 12px; background: #1b2027; }
+  #log .tv { background: #14352b; }
+  small { color: #8b94a3; }
+</style>
+</head>
+<body>
+<h1><span id="dot"></span> Điều khiển TV</h1>
+<input id="room" placeholder="Mã phòng (giống trong config.js của TV)">
+<button id="mic" type="button">🎤 Bấm để nói</button>
+<div class="row"><input id="txt" placeholder="Hoặc gõ lệnh: mở YouTube..."><button id="send" type="button">Gửi</button></div>
+<div class="row">
+  <button data-t="mở youtube" type="button">YouTube</button>
+  <button data-t="mở netflix" type="button">Netflix</button>
+  <button data-t="đổi nền" type="button">Đổi nền</button>
+  <button data-t="thời tiết" type="button">Thời tiết</button>
+</div>
+<div id="log"></div>
+<small>Nói: "mở YouTube", "đổi nền", "thời tiết hôm nay thế nào".</small>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var APPS = [['youtube', 'youtube'], ['netflix', 'netflix'], ['apple music', 'apple music'],
+  ['apple tv', 'apple tv'], ['fpt play', 'fpt play'], ['cai dat', 'setting']];
+function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd'); }
+function parse(text) {
+  var t = norm(text), i;
+  for (i = 0; i < APPS.length; i++) { if (t.indexOf(APPS[i][0]) >= 0) { return { cmd: 'open', app: APPS[i][1] }; } }
+  if (/(^|\s)nen(\s|$)/.test(t)) { return { cmd: 'wallpaper' }; }
+  if (t.indexOf('thoi tiet') >= 0) { return { cmd: 'weather' }; }
+  return null;
+}
+var ws = null, retry = null;
+function log(text, cls) { var d = document.createElement('div'); d.textContent = text; if (cls) { d.className = cls; } $('log').insertBefore(d, $('log').firstChild); }
+function connect() {
+  var room = $('room').value.trim();
+  clearTimeout(retry);
+  if (ws) { ws.onclose = null; ws.close(); }
+  if (room.length < 8) { $('dot').className = ''; return; }
+  localStorage.setItem('room', room);
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/?room=' + encodeURIComponent(room) + '&role=phone');
+  ws.onopen = function () { $('dot').className = 'on'; };
+  ws.onclose = function () { $('dot').className = ''; retry = setTimeout(connect, 3000); };
+  ws.onmessage = function (ev) {
+    try {
+      var m = JSON.parse(ev.data);
+      if (m.type === 'reply') {
+        log('TV: ' + m.text, 'tv');
+        if (window.speechSynthesis) { var u = new SpeechSynthesisUtterance(m.text); u.lang = 'vi-VN'; speechSynthesis.speak(u); }
+      }
+    } catch (e) {}
+  };
+}
+function run(text) {
+  if (!text) { return; }
+  log('Bạn: ' + text);
+  var cmd = parse(text);
+  if (!cmd) { log('Chưa hiểu lệnh. Thử: "mở YouTube", "đổi nền", "thời tiết".', 'tv'); return; }
+  if (!ws || ws.readyState !== 1) { log('Chưa kết nối tới TV. Kiểm tra mã phòng.', 'tv'); return; }
+  ws.send(JSON.stringify(cmd));
+}
+$('room').value = localStorage.getItem('room') || '';
+$('room').onchange = connect;
+$('send').onclick = function () { run($('txt').value); $('txt').value = ''; };
+[].forEach.call(document.querySelectorAll('[data-t]'), function (b) { b.onclick = function () { run(b.getAttribute('data-t')); }; });
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
+$('mic').onclick = function () {
+  if (!SR) { log('Trình duyệt này không hỗ trợ nhận giọng nói. Hãy gõ lệnh.', 'tv'); return; }
+  if (rec) { rec.stop(); return; }
+  rec = new SR();
+  rec.lang = 'vi-VN';
+  rec.onstart = function () { $('mic').className = 'rec'; $('mic').textContent = '🎤 Đang nghe...'; };
+  rec.onresult = function (e) { run(e.results[0][0].transcript); };
+  rec.onerror = function (e) { log('Lỗi micro: ' + e.error, 'tv'); };
+  rec.onend = function () { rec = null; $('mic').className = ''; $('mic').textContent = '🎤 Bấm để nói'; };
+  rec.start();
+};
+connect();
+</script>
+</body>
+</html>
