@@ -6,7 +6,7 @@ var WebSocketServer = require('ws').Server;
 var PORT = process.env.PORT || 8080;
 
 var server = http.createServer(function (req, res) {
-  fs.readFile(path.join(__dirname, 'public', 'index.html'), function (err, data) {
+   fs.readFile(path.join(__dirname, 'index.html'), function (err, data) {
     if (err) { res.writeHead(500); res.end('error'); return; }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(data);
