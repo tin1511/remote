@@ -389,20 +389,14 @@ function connect() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/?room=' + encodeURIComponent(room) + '&role=phone');
   ws.onopen = function () { setStatus(true); };
   ws.onclose = function () { setStatus(false); retry = setTimeout(connect, 3000); };
-  ws.onmessage = function (ev) {
-    try {
-      var m = JSON.parse(ev.data);
-      if (m.type === 'reply') {
-        log('TV: ' + m.text, 'tv');
-        if (window.speechSynthesis) {
-          var u = new SpeechSynthesisUtterance(m.text);
-          u.lang = 'vi-VN';
-          speechSynthesis.speak(u);
-        }
-      }
-    } catch (e) {}
-  };
-}
+ws.onmessage = function (ev) {
+  try {
+    var m = JSON.parse(ev.data);
+    if (m.type === 'reply') {
+      log('TV: ' + m.text, 'tv');
+    }
+  } catch (e) {}
+};
 
 function run(text) {
   if (!text) { return; }
