@@ -35,7 +35,6 @@
     user-select: none;
   }
 
-  /* Thanh trạng thái & Mã phòng */
   .header {
     display: flex;
     align-items: center;
@@ -98,7 +97,6 @@
     opacity: 0.6;
   }
 
-  /* Nút Giọng nói Trung tâm */
   .voice-section {
     display: flex;
     flex-direction: column;
@@ -139,7 +137,6 @@
     color: var(--sub);
   }
 
-  /* Lưới nút bấm nhanh */
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -173,7 +170,6 @@
   .btn-tile.yt { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1); }
   .btn-tile.nf { border-color: rgba(220, 38, 38, 0.3); }
 
-  /* Ô nhập lệnh văn bản */
   .cmd-bar {
     display: flex;
     gap: 8px;
@@ -203,7 +199,6 @@
   }
   .cmd-bar button:active { opacity: 0.85; }
 
-  /* Khung nhật ký phản hồi (Chat Log) */
   .log-box {
     flex: 1;
     background: rgba(15, 23, 42, 0.6);
@@ -257,7 +252,7 @@
 
 <div class="room-box">
   <span class="lock-icon">🔑</span>
-  <input id="room" placeholder="Nhập mã phòng (tối thiểu 8 ký tự)..." autocomplete="off">
+  <input id="room" value="phongkhach123" placeholder="Nhập mã phòng (tối thiểu 8 ký tự)..." autocomplete="off">
 </div>
 
 <div class="voice-section">
@@ -325,6 +320,7 @@
 
 // --- 2. Logic Điều khiển & Phân tích lệnh ---
 var $ = function (id) { return document.getElementById(id); };
+var DEFAULT_ROOM = 'phongkhach123'; // Mã phòng mặc định đã thiết lập sẵn
 var APPS = [['youtube', 'youtube'], ['netflix', 'netflix'], ['apple music', 'apple music'],
   ['apple tv', 'apple tv'], ['fpt play', 'fpt play'], ['cai dat', 'setting']];
 
@@ -389,14 +385,15 @@ function connect() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/?room=' + encodeURIComponent(room) + '&role=phone');
   ws.onopen = function () { setStatus(true); };
   ws.onclose = function () { setStatus(false); retry = setTimeout(connect, 3000); };
-ws.onmessage = function (ev) {
-  try {
-    var m = JSON.parse(ev.data);
-    if (m.type === 'reply') {
-      log('TV: ' + m.text, 'tv');
-    }
-  } catch (e) {}
-};
+  ws.onmessage = function (ev) {
+    try {
+      var m = JSON.parse(ev.data);
+      if (m.type === 'reply') {
+        log('TV: ' + m.text, 'tv'); // Chỉ hiện chữ trên điện thoại, để loa TV tự nói
+      }
+    } catch (e) {}
+  };
+}
 
 function run(text) {
   if (!text) { return; }
@@ -408,7 +405,8 @@ function run(text) {
   ws.send(JSON.stringify(cmd));
 }
 
-$('room').value = localStorage.getItem('room') || '';
+// Tự động điền sẵn 'phongkhach123' nếu chưa từng nhập trước đó
+$('room').value = localStorage.getItem('room') || DEFAULT_ROOM;
 $('room').onchange = connect;
 $('room').onkeyup = function () { if ($('room').value.trim().length >= 8 && (!ws || ws.readyState !== 1)) { connect(); } };
 $('send').onclick = function () { run($('txt').value); $('txt').value = ''; };
