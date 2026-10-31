@@ -2,45 +2,335 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#111418">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TV Remote">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Điều khiển TV</title>
 <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, Arial, sans-serif; background: #111418; color: #f2f4f7; padding: 16px; max-width: 520px; margin: 0 auto; }
-  h1 { font-size: 20px; margin: 4px 0 14px; display: flex; align-items: center; gap: 10px; }
-  #dot { width: 12px; height: 12px; border-radius: 50%; background: #666; }
-  #dot.on { background: #34d399; }
-  input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #343a46; background: #1b2027; color: #fff; font-size: 16px; }
-  button { padding: 12px 14px; border: 0; border-radius: 12px; background: #2b3340; color: #fff; font-size: 16px; cursor: pointer; }
-  .row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
-  .row > input { flex: 1; min-width: 0; }
-  #mic { width: 100%; padding: 22px; font-size: 20px; background: #2563eb; }
-  #mic.rec { background: #dc2626; }
-  #log { margin-top: 14px; font-size: 15px; line-height: 1.5; }
-  #log div { padding: 8px 12px; margin: 6px 0; border-radius: 12px; background: #1b2027; }
-  #log .tv { background: #14352b; }
-  small { color: #8b94a3; }
+  :root {
+    --bg: #0b0f19;
+    --card: rgba(255, 255, 255, 0.06);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --text: #f8fafc;
+    --sub: #94a3b8;
+    --primary: #3b82f6;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg) 70%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 20px);
+    display: flex;
+    flex-direction: column;
+    max-width: 460px;
+    margin: 0 auto;
+    user-select: none;
+  }
+
+  /* Thanh trạng thái & Mã phòng */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 14px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 99px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--sub);
+  }
+  #dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #64748b;
+    transition: all 0.3s;
+  }
+  #dot.on {
+    background: var(--success);
+    box-shadow: 0 0 10px var(--success);
+  }
+
+  .room-box {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .room-box input {
+    width: 100%;
+    padding: 12px 14px 12px 38px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .room-box input:focus { border-color: var(--primary); }
+  .room-box .lock-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    opacity: 0.6;
+  }
+
+  /* Nút Giọng nói Trung tâm */
+  .voice-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px 0 20px;
+  }
+  #mic {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff;
+    font-size: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45), inset 0 2px 4px rgba(255,255,255,0.25);
+    cursor: pointer;
+    transition: transform 0.15s, background 0.3s;
+    position: relative;
+  }
+  #mic:active { transform: scale(0.93); }
+  #mic.rec {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+    70% { box-shadow: 0 0 0 22px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  }
+  #mic-label {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sub);
+  }
+
+  /* Lưới nút bấm nhanh */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .btn-tile {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 14px 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    transition: transform 0.12s, background 0.2s;
+  }
+  .btn-tile:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .btn-tile .ico {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .btn-tile.home { border-color: rgba(59, 130, 246, 0.35); background: rgba(59, 130, 246, 0.12); }
+  .btn-tile.yt { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1); }
+  .btn-tile.nf { border-color: rgba(220, 38, 38, 0.3); }
+
+  /* Ô nhập lệnh văn bản */
+  .cmd-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .cmd-bar input {
+    flex: 1;
+    min-width: 0;
+    padding: 13px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+  }
+  .cmd-bar input:focus { border-color: var(--primary); }
+  .cmd-bar button {
+    padding: 0 18px;
+    border-radius: 14px;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .cmd-bar button:active { opacity: 0.85; }
+
+  /* Khung nhật ký phản hồi (Chat Log) */
+  .log-box {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 12px;
+    overflow-y: auto;
+    max-height: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .msg {
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    max-width: 88%;
+    word-wrap: break-word;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.tv {
+    align-self: flex-start;
+    background: rgba(16, 185, 129, 0.16);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #d1fae5;
+    border-bottom-left-radius: 4px;
+  }
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--sub);
+    margin-top: 10px;
+  }
 </style>
 </head>
 <body>
-<h1><span id="dot"></span> Điều khiển TV</h1>
-<input id="room" placeholder="Mã phòng (giống trong config.js của TV)">
-<button id="mic" type="button">🎤 Bấm để nói</button>
-<div class="row"><input id="txt" placeholder="Hoặc gõ: mở phim Conan, về trang chủ..."><button id="send" type="button">Gửi</button></div>
-<div class="row">
-  <button data-t="về trang chủ" type="button">🏠 Trang chủ</button>
-  <button data-t="mở youtube" type="button">YouTube</button>
-  <button data-t="mở netflix" type="button">Netflix</button>
-  <button data-t="đổi nền" type="button">Đổi nền</button>
-  <button data-t="thời tiết" type="button">Thời tiết</button>
+
+<div class="header">
+  <div class="brand">📺 Smart TV Remote</div>
+  <div class="status-badge">
+    <span id="dot"></span>
+    <span id="status-text">Chưa kết nối</span>
+  </div>
 </div>
-<div id="log"></div>
-<small>Thử nói: "mở phim Conan", "nghe nhạc trẻ", "về trang chủ", "đổi nền", "thời tiết".</small>
+
+<div class="room-box">
+  <span class="lock-icon">🔑</span>
+  <input id="room" placeholder="Nhập mã phòng (tối thiểu 8 ký tự)..." autocomplete="off">
+</div>
+
+<div class="voice-section">
+  <button id="mic" type="button" aria-label="Bấm để nói">🎤</button>
+  <div id="mic-label">Chạm để ra lệnh giọng nói</div>
+</div>
+
+<div class="grid">
+  <button class="btn-tile home" data-t="về trang chủ" type="button">
+    <span class="ico">🏠</span><span>Trang chủ</span>
+  </button>
+  <button class="btn-tile yt" data-t="mở youtube" type="button">
+    <span class="ico">▶️</span><span>YouTube</span>
+  </button>
+  <button class="btn-tile nf" data-t="mở netflix" type="button">
+    <span class="ico">🎬</span><span>Netflix</span>
+  </button>
+  <button class="btn-tile" data-t="mở fpt play" type="button">
+    <span class="ico">📡</span><span>FPT Play</span>
+  </button>
+  <button class="btn-tile" data-t="đổi nền" type="button">
+    <span class="ico">🖼️</span><span>Đổi nền</span>
+  </button>
+  <button class="btn-tile" data-t="thời tiết" type="button">
+    <span class="ico">⛅</span><span>Thời tiết</span>
+  </button>
+</div>
+
+<div class="cmd-bar">
+  <input id="txt" placeholder="Gõ lệnh: mở phim Conan, nhạc trẻ...">
+  <button id="send" type="button">Gửi</button>
+</div>
+
+<div id="log" class="log-box">
+  <div class="msg tv">Xin chào! Thử nói: "Mở phim Conan", "Nghe nhạc trẻ", hoặc "Về trang chủ".</div>
+</div>
+<div class="hint">Mẹo: Chọn "Thêm vào màn hình chính" để dùng như App</div>
+
 <script>
+// --- 1. Tích hợp PWA Manifest & Icon tự động ---
+(function setupPWA() {
+  var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#1e293b"/><rect x="136" y="76" width="240" height="360" rx="48" fill="#0f172a" stroke="#3b82f6" stroke-width="16"/><circle cx="256" cy="190" r="52" fill="#3b82f6"/><circle cx="206" cy="300" r="18" fill="#64748b"/><circle cx="306" cy="300" r="18" fill="#64748b"/><circle cx="206" cy="360" r="18" fill="#64748b"/><circle cx="306" cy="360" r="18" fill="#64748b"/></svg>';
+  var iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgIcon);
+
+  var linkApple = document.createElement('link');
+  linkApple.rel = 'apple-touch-icon';
+  linkApple.href = iconUrl;
+  document.head.appendChild(linkApple);
+
+  var manifest = {
+    name: 'Điều khiển Smart TV',
+    short_name: 'TV Remote',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0b0f19',
+    theme_color: '#0b0f19',
+    orientation: 'portrait',
+    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }]
+  };
+  var linkManifest = document.createElement('link');
+  linkManifest.rel = 'manifest';
+  linkManifest.href = 'data:application/manifest+json;utf8,' + encodeURIComponent(JSON.stringify(manifest));
+  document.head.appendChild(linkManifest);
+})();
+
+// --- 2. Logic Điều khiển & Phân tích lệnh ---
 var $ = function (id) { return document.getElementById(id); };
 var APPS = [['youtube', 'youtube'], ['netflix', 'netflix'], ['apple music', 'apple music'],
   ['apple tv', 'apple tv'], ['fpt play', 'fpt play'], ['cai dat', 'setting']];
+
+function vibrate(ms) {
+  try { if (navigator.vibrate) { navigator.vibrate(ms || 25); } } catch (e) {}
+}
 
 function norm(s) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();
@@ -50,23 +340,18 @@ function parse(text) {
   var raw = text.trim();
   var t = norm(raw), i;
 
-  // 1. Lệnh về trang chủ (Launcher)
   if (t.indexOf('trang chu') >= 0 || t.indexOf('ve nha') >= 0 || t === 'home' || t === 'thoat') {
     return { cmd: 'home' };
   }
-
-  // 2. Lệnh đổi hình nền & xem thời tiết
   if (/(^|\s)nen(\s|$)/.test(t)) { return { cmd: 'wallpaper' }; }
   if (t.indexOf('thoi tiet') >= 0) { return { cmd: 'weather' }; }
 
-  // 3. Nếu chỉ gọi mở đích danh tên ứng dụng cơ bản (vd: "mở youtube", "mở netflix")
   for (i = 0; i < APPS.length; i++) {
     if (t === APPS[i][0] || t === 'mo ' + APPS[i][0] || t === 'mo ung dung ' + APPS[i][0]) {
       return { cmd: 'open', app: APPS[i][1] };
     }
   }
 
-  // 4. Lệnh mở phim, nhạc hoặc nội dung bất kỳ trên YouTube (giữ nguyên dấu tiếng Việt để tìm chính xác)
   if (/^(mo|xem|phat|nghe|tim)\s+/i.test(t) || t.indexOf('phim') >= 0 || t.indexOf('nhac') >= 0 || t.indexOf('karaoke') >= 0 || t.indexOf('conan') >= 0) {
     var query = raw.replace(/^(mở|mo|xem|phát|phat|nghe|tìm|tim)\s+(youtube\s+|trên youtube\s+)?/i, '').trim();
     if (query) {
@@ -74,13 +359,11 @@ function parse(text) {
     }
   }
 
-  // 5. Kiểm tra lại nếu câu nói có chứa tên các ứng dụng trong danh sách
   for (i = 0; i < APPS.length; i++) {
     if (t.indexOf(APPS[i][0]) >= 0) {
       return { cmd: 'open', app: APPS[i][1] };
     }
   }
-
   return null;
 }
 
@@ -88,19 +371,24 @@ var ws = null, retry = null;
 function log(text, cls) {
   var d = document.createElement('div');
   d.textContent = text;
-  if (cls) { d.className = cls; }
+  d.className = 'msg ' + (cls || 'user');
   $('log').insertBefore(d, $('log').firstChild);
+}
+
+function setStatus(online) {
+  $('dot').className = online ? 'on' : '';
+  $('status-text').textContent = online ? 'Đã kết nối' : 'Chưa kết nối';
 }
 
 function connect() {
   var room = $('room').value.trim();
   clearTimeout(retry);
   if (ws) { ws.onclose = null; ws.close(); }
-  if (room.length < 8) { $('dot').className = ''; return; }
+  if (room.length < 8) { setStatus(false); return; }
   localStorage.setItem('room', room);
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/?room=' + encodeURIComponent(room) + '&role=phone');
-  ws.onopen = function () { $('dot').className = 'on'; };
-  ws.onclose = function () { $('dot').className = ''; retry = setTimeout(connect, 3000); };
+  ws.onopen = function () { setStatus(true); };
+  ws.onclose = function () { setStatus(false); retry = setTimeout(connect, 3000); };
   ws.onmessage = function (ev) {
     try {
       var m = JSON.parse(ev.data);
@@ -118,33 +406,45 @@ function connect() {
 
 function run(text) {
   if (!text) { return; }
-  log('Bạn: ' + text);
+  vibrate(30);
+  log(text, 'user');
   var cmd = parse(text);
-  if (!cmd) { log('Chưa hiểu lệnh. Thử: "mở phim Conan", "về trang chủ", "đổi nền", "thời tiết".', 'tv'); return; }
-  if (!ws || ws.readyState !== 1) { log('Chưa kết nối tới TV. Kiểm tra mã phòng.', 'tv'); return; }
+  if (!cmd) { log('Chưa hiểu lệnh. Thử: "mở phim Conan", "về trang chủ", "đổi nền".', 'tv'); return; }
+  if (!ws || ws.readyState !== 1) { log('Chưa kết nối tới máy chủ. Kiểm tra mã phòng.', 'tv'); return; }
   ws.send(JSON.stringify(cmd));
 }
 
 $('room').value = localStorage.getItem('room') || '';
 $('room').onchange = connect;
+$('room').onkeyup = function () { if ($('room').value.trim().length >= 8 && (!ws || ws.readyState !== 1)) { connect(); } };
 $('send').onclick = function () { run($('txt').value); $('txt').value = ''; };
 $('txt').onkeydown = function (e) { if (e.key === 'Enter') { run($('txt').value); $('txt').value = ''; } };
+
 [].forEach.call(document.querySelectorAll('[data-t]'), function (b) {
   b.onclick = function () { run(b.getAttribute('data-t')); };
 });
 
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
 $('mic').onclick = function () {
-  if (!SR) { log('Trình duyệt này không hỗ trợ nhận giọng nói. Hãy gõ lệnh.', 'tv'); return; }
+  vibrate(40);
+  if (!SR) { log('Trình duyệt không hỗ trợ nhận giọng nói. Hãy gõ lệnh bên dưới.', 'tv'); return; }
   if (rec) { rec.stop(); return; }
   rec = new SR();
   rec.lang = 'vi-VN';
-  rec.onstart = function () { $('mic').className = 'rec'; $('mic').textContent = '🎤 Đang nghe...'; };
+  rec.onstart = function () {
+    $('mic').className = 'rec';
+    $('mic-label').textContent = 'Đang nghe bạn nói...';
+  };
   rec.onresult = function (e) { run(e.results[0][0].transcript); };
   rec.onerror = function (e) { log('Lỗi micro: ' + e.error, 'tv'); };
-  rec.onend = function () { rec = null; $('mic').className = ''; $('mic').textContent = '🎤 Bấm để nói'; };
+  rec.onend = function () {
+    rec = null;
+    $('mic').className = '';
+    $('mic-label').textContent = 'Chạm để ra lệnh giọng nói';
+  };
   rec.start();
 };
+
 connect();
 </script>
 </body>
